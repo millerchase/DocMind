@@ -1,4 +1,3 @@
-import React from 'react';
 import { ErrorCode } from '../../shared/types';
 import { getErrorMessage } from '../constants';
 

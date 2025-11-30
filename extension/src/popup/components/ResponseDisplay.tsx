@@ -1,4 +1,3 @@
-import React from 'react';
 import { RESULT_MESSAGES } from '../constants';
 
 interface ResponseDisplayProps {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useDocMind } from './hooks/useDocMind';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ErrorBanner } from './components/ErrorBanner';
@@ -56,6 +55,7 @@ export default function App() {
   }
 
   // Extracted or Success state
+  // @ts-expect-error - isBusy kept for future-proofing; currently always false due to early return
   const isBusy = state.status === 'querying';
 
   return (

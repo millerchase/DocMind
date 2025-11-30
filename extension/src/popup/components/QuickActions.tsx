@@ -1,4 +1,3 @@
-import React from 'react';
 import { Action } from '../../shared/types';
 import { QUICK_ACTIONS } from '../constants';
 
