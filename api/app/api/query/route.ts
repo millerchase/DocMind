@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const MAX_CHARS = 30000;
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
 const SYSTEM_PROMPT = `You are DocMind, an AI assistant that answers questions strictly using the provided document text. Do not use outside knowledge.
 
 Rules:
@@ -25,13 +31,16 @@ interface QueryRequest {
   action?: string;
 }
 
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: corsHeaders });
+}
+
 export async function POST(req: NextRequest) {
-  // Guard: API key configured
   if (!process.env.ANTHROPIC_API_KEY) {
     console.error('ANTHROPIC_API_KEY not configured');
     return NextResponse.json(
       { error: 'API_ERROR', message: 'Server configuration error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 
@@ -43,27 +52,25 @@ export async function POST(req: NextRequest) {
     const body: QueryRequest = await req.json();
     const { text, question } = body;
 
-    // Validation
     if (!text || text.length < 100) {
-      return NextResponse.json({ error: 'INSUFFICIENT_TEXT' }, { status: 400 });
-    }
-
-    // Server-side truncation (defense in depth)
-    const safeText = text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text;
-
-    // Validate action
-    const rawAction = body.action ?? 'ask';
-    const action = allowedActions.has(rawAction as any) ? rawAction : 'ask';
-
-    // Validate question when action is 'ask'
-    if (action === 'ask' && (!question || !question.trim())) {
       return NextResponse.json(
-        { error: 'INSUFFICIENT_TEXT', message: 'Question is required' },
-        { status: 400 }
+        { error: 'INSUFFICIENT_TEXT' },
+        { status: 400, headers: corsHeaders }
       );
     }
 
-    // Build user prompt
+    const safeText = text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text;
+
+    const rawAction = body.action ?? 'ask';
+    const action = allowedActions.has(rawAction as any) ? rawAction : 'ask';
+
+    if (action === 'ask' && (!question || !question.trim())) {
+      return NextResponse.json(
+        { error: 'INSUFFICIENT_TEXT', message: 'Question is required' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     const userPrompt = buildPrompt(safeText, question, action);
 
     const response = await anthropic.messages.create({
@@ -74,29 +81,40 @@ export async function POST(req: NextRequest) {
       messages: [{ role: 'user', content: userPrompt }],
     });
 
-    // Defensive response handling
     const textBlock = response.content.find((block) => block.type === 'text');
 
     if (!textBlock || textBlock.type !== 'text') {
-      return NextResponse.json({ error: 'UNEXPECTED_RESPONSE' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'UNEXPECTED_RESPONSE' },
+        { status: 500, headers: corsHeaders }
+      );
     }
 
-    return NextResponse.json({ answer: textBlock.text });
+    return NextResponse.json(
+      { answer: textBlock.text },
+      { headers: corsHeaders }
+    );
   } catch (err) {
     console.error('API error:', err);
 
     if (err instanceof Anthropic.APIError) {
       if (err.status === 429) {
-        return NextResponse.json({ error: 'RATE_LIMITED' }, { status: 429 });
+        return NextResponse.json(
+          { error: 'RATE_LIMITED' },
+          { status: 429, headers: corsHeaders }
+        );
       }
 
       return NextResponse.json(
         { error: 'API_ERROR', message: err.message },
-        { status: err.status || 500 }
+        { status: err.status || 500, headers: corsHeaders }
       );
     }
 
-    return NextResponse.json({ error: 'API_ERROR' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'API_ERROR' },
+      { status: 500, headers: corsHeaders }
+    );
   }
 }
 
