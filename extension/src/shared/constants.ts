@@ -1,0 +1,29 @@
+// extension/src/shared/constants.ts
+export const CONTEXT_MENU_CONFIG = {
+  MAX_SELECTION_CHARS: 500,
+  MIN_SELECTION_CHARS: 3,
+  PENDING_CONTEXT_TTL_MS: 30_000,
+} as const;
+
+export const CHAT_CONFIG = {
+  MAX_PAGE_CHARS: 30_000,
+  MAX_MESSAGES: 6,
+  MAX_HISTORY_CHARS: 4_000,
+} as const;
+
+export const HIGHLIGHT_CONFIG = {
+  MIN_CONFIDENCE_THRESHOLD: 0.85,
+  MAX_MATCH_TIME_MS: 500,
+  MAX_DOM_NODES: 10_000,
+  MAX_FALLBACK_CHECKS: 500,
+  MAX_NODE_TEXT_LEN: 20_000,
+} as const;
+
+Object.freeze(HIGHLIGHT_CONFIG);
+
+export const CITATION_LIMITS = {
+  MIN_COUNT: 1,
+  MAX_COUNT: 5,
+  MIN_TEXT_LENGTH: 20,
+  MAX_TEXT_LENGTH: 300,
+} as const;

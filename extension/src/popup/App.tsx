@@ -9,7 +9,7 @@ import { LOADING_MESSAGES } from './constants';
 import { Action } from '../shared/types';
 
 export default function App() {
-  const { state, runAction, retry } = useDocMind();
+  const { state, runAction, retry, prefillQuestion, clearPrefill } = useDocMind();
 
   const handleAsk = (question: string) => {
     runAction('ask', question);
@@ -69,7 +69,12 @@ export default function App() {
 
       {state.status === 'success' && <ResponseDisplay answer={state.answer} />}
 
-      <QuestionInput onSubmit={handleAsk} disabled={isBusy} />
+      <QuestionInput
+        onSubmit={handleAsk}
+        disabled={isBusy}
+        initialValue={prefillQuestion}
+        onInitialValueUsed={clearPrefill}
+      />
       <QuickActions onAction={handleQuickAction} disabled={isBusy} />
     </div>
   );

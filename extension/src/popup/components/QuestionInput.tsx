@@ -1,13 +1,28 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { PLACEHOLDERS } from '../constants';
 
 interface QuestionInputProps {
   onSubmit: (question: string) => void;
   disabled: boolean;
+  initialValue?: string | null;
+  onInitialValueUsed?: () => void;
 }
 
-export function QuestionInput({ onSubmit, disabled }: QuestionInputProps) {
+export function QuestionInput({
+  onSubmit,
+  disabled,
+  initialValue,
+  onInitialValueUsed
+}: QuestionInputProps) {
   const [question, setQuestion] = useState('');
+
+  // Handle initial value from context menu
+  useEffect(() => {
+    if (initialValue) {
+      setQuestion(initialValue);
+      onInitialValueUsed?.();
+    }
+  }, [initialValue, onInitialValueUsed]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

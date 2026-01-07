@@ -13,13 +13,16 @@ export default defineConfig({
     }),
   ],
 
+  // Use relative paths for browser extension compatibility
+  base: './',
+
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        popup: 'src/popup/index.html',
-        'background/service-worker': 'src/background/service-worker.ts',
+        'popup/index': 'src/popup/index.html',
+        'background/index': 'src/background/index.ts',
       },
       output: {
         entryFileNames: '[name].js',

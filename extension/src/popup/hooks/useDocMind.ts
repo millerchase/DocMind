@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { browser, getActiveTab } from '../../shared/browser';
 import { ExtractionResult, ErrorCode, Action } from '../../shared/types';
 import { fetchAnswer } from '../api';
 
@@ -22,29 +23,62 @@ export type State =
       lastQuestion?: string;
     } & Partial<BaseExtracted>);
 
+type PendingContext = {
+  kind: 'selection';
+  tabId: number;
+  selectionText: string;
+  createdAt: number;
+} | null;
+
+type PendingContextResponse = {
+  type: 'PENDING_CONTEXT';
+  payload: PendingContext;
+};
+
 export function useDocMind() {
   const [state, setState] = useState<State>({ status: 'idle' });
+  const [prefillQuestion, setPrefillQuestion] = useState<string | null>(null);
 
   // Auto-extract on mount
   useEffect(() => {
     extract();
   }, []);
 
+  // Check for pending context from context menu
+  useEffect(() => {
+    async function checkPendingContext() {
+      try {
+        const response = await browser.runtime.sendMessage({
+          type: 'GET_PENDING_CONTEXT',
+        }) as PendingContextResponse;
+
+        if (response?.payload?.selectionText) {
+          const question = `What does this mean: "${response.payload.selectionText}"?`;
+          setPrefillQuestion(question);
+
+          // Fire and forget - clear the pending context
+          browser.runtime.sendMessage({ type: 'CLEAR_PENDING_CONTEXT' });
+        }
+      } catch {
+        // Silently fail - context menu flow is optional
+      }
+    }
+
+    checkPendingContext();
+  }, []);
+
   async function extract() {
     setState({ status: 'extracting' });
 
     try {
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
+      const tab = await getActiveTab();
 
-      if (!tab.id) {
+      if (!tab?.id) {
         setState({ status: 'error', error: 'CANNOT_ACCESS_PAGE' });
         return;
       }
 
-      const result = (await chrome.runtime.sendMessage({
+      const result = (await browser.runtime.sendMessage({
         type: 'EXTRACT_TEXT',
         tabId: tab.id,
       })) as ExtractionResult;
@@ -64,7 +98,7 @@ export function useDocMind() {
         truncated: result.truncated,
         isPDF: result.isPDF,
       });
-    } catch (err) {
+    } catch {
       setState({ status: 'error', error: 'EXTRACTION_FAILED' });
     }
   }
@@ -121,5 +155,9 @@ export function useDocMind() {
     }
   }
 
-  return { state, extract, runAction, retry };
+  function clearPrefill() {
+    setPrefillQuestion(null);
+  }
+
+  return { state, extract, runAction, retry, prefillQuestion, clearPrefill };
 }
