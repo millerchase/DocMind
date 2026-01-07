@@ -23,6 +23,7 @@ export default defineConfig({
       input: {
         'popup/index': 'src/popup/index.html',
         'background/index': 'src/background/index.ts',
+        'content/index': 'src/content/index.ts',
       },
       output: {
         entryFileNames: '[name].js',
