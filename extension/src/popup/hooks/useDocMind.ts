@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { browser, getActiveTab } from '../../shared/browser';
-import { ExtractionResult, ErrorCode, Action } from '../../shared/types';
+import type { ExtractionResult, ErrorCode, Action, Citation } from '../../shared/types';
 import { fetchAnswer } from '../api';
 
 type BaseExtracted = {
@@ -8,6 +8,7 @@ type BaseExtracted = {
   charCount: number;
   truncated: boolean;
   isPDF: boolean;
+  url: string;
 };
 
 export type State =
@@ -15,7 +16,7 @@ export type State =
   | { status: 'extracting' }
   | ({ status: 'extracted' } & BaseExtracted)
   | ({ status: 'querying'; action: Action } & BaseExtracted)
-  | ({ status: 'success'; answer: string; action: Action } & BaseExtracted)
+  | ({ status: 'success'; answer: string; citations: Citation[]; action: Action } & BaseExtracted)
   | ({
       status: 'error';
       error: ErrorCode;
@@ -97,6 +98,7 @@ export function useDocMind() {
         charCount: result.charCount,
         truncated: result.truncated,
         isPDF: result.isPDF,
+        url: tab.url || '',
       });
     } catch {
       setState({ status: 'error', error: 'EXTRACTION_FAILED' });
@@ -106,10 +108,10 @@ export function useDocMind() {
   async function runAction(action: Action, question?: string) {
     if (state.status !== 'extracted' && state.status !== 'success') return;
 
-    const { text, charCount, truncated, isPDF } = state;
-    setState({ status: 'querying', text, charCount, truncated, isPDF, action });
+    const { text, charCount, truncated, isPDF, url } = state;
+    setState({ status: 'querying', text, charCount, truncated, isPDF, url, action });
 
-    const result = await fetchAnswer(text, action, question);
+    const result = await fetchAnswer(text, charCount, action, question, url);
 
     if ('error' in result) {
       setState({
@@ -119,6 +121,7 @@ export function useDocMind() {
         charCount,
         truncated,
         isPDF,
+        url,
         lastAction: action,
         lastQuestion: question,
       });
@@ -128,11 +131,13 @@ export function useDocMind() {
     setState({
       status: 'success',
       answer: result.answer,
+      citations: result.citations,
       action,
       text,
       charCount,
       truncated,
       isPDF,
+      url,
     });
   }
 
@@ -149,6 +154,7 @@ export function useDocMind() {
         charCount: state.charCount!,
         truncated: state.truncated!,
         isPDF: state.isPDF!,
+        url: state.url || '',
       });
     } else {
       extract();
