@@ -98,6 +98,7 @@ export interface MatchResult {
   status: 'matched' | 'low-confidence' | 'not-found' | 'skipped';
   confidence: number;
   skipReason?: HighlightSkipReason;
+  segmentIndex?: number;  // Index into PageIndex.segments for highlighting
 }
 
 export type HighlightSkipReason =
