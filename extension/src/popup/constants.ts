@@ -20,6 +20,10 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
     'Got an unexpected response from the AI. Please try again.',
   TIMEOUT:
     'Request timed out. The page may be too long or the AI is busy. Please try again.',
+  JSON_PARSE_FAILED:
+    'Could not parse the AI response. Please try again.',
+  INVALID_RESPONSE:
+    'The AI response was invalid. Please try again.',
 };
 
 export const LOADING_MESSAGES = {
