@@ -67,7 +67,13 @@ export default function App() {
         isPDF={state.isPDF}
       />
 
-      {state.status === 'success' && <ResponseDisplay answer={state.answer} />}
+      {state.status === 'success' && (
+        <ResponseDisplay
+          answer={state.answer}
+          citations={state.citations}
+          highlightStatus={state.highlightStatus}
+        />
+      )}
 
       <QuestionInput
         onSubmit={handleAsk}

@@ -16,7 +16,7 @@ export type State =
   | { status: 'extracting' }
   | ({ status: 'extracted' } & BaseExtracted)
   | ({ status: 'querying'; action: Action } & BaseExtracted)
-  | ({ status: 'success'; answer: string; citations: Citation[]; action: Action } & BaseExtracted)
+  | ({ status: 'success'; answer: string; citations: Citation[]; action: Action; highlightStatus: Map<string, boolean> } & BaseExtracted)
   | ({
       status: 'error';
       error: ErrorCode;
@@ -128,8 +128,8 @@ export function useDocMind() {
       return;
     }
 
-    setState({
-      status: 'success',
+    const successState = {
+      status: 'success' as const,
       answer: result.answer,
       citations: result.citations,
       action,
@@ -138,7 +138,37 @@ export function useDocMind() {
       truncated,
       isPDF,
       url,
-    });
+      highlightStatus: new Map<string, boolean>(),
+    };
+    setState(successState);
+
+    const highlightStatus = await injectHighlights(result.citations);
+    setState(prev => prev.status === 'success' ? { ...prev, highlightStatus } : prev);
+  }
+
+  async function injectHighlights(citations: Citation[]): Promise<Map<string, boolean>> {
+    const status = new Map<string, boolean>();
+    try {
+      const tab = await getActiveTab();
+      if (!tab?.id || citations.length === 0) return status;
+
+      // Build index first (required before injection)
+      await browser.tabs.sendMessage(tab.id, {
+        type: 'BUILD_INDEX',
+        tabId: tab.id,
+      });
+
+      // Then inject all highlights at once
+      const result = await browser.tabs.sendMessage(tab.id, {
+        type: 'INJECT_HIGHLIGHTS',
+        citations,
+      }) as { type: string; results: { citationId: string; injected: boolean }[] };
+
+      result.results?.forEach(r => status.set(r.citationId, r.injected));
+    } catch {
+      // All failed - return empty map
+    }
+    return status;
   }
 
   function retry() {

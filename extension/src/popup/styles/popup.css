@@ -275,12 +275,75 @@ body {
   cursor: not-allowed;
 }
 
+/* Citation Badges */
+.citation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  margin: 4px 4px 4px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.citation-badge:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.citation-badge:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.citation-number {
+  font-weight: 600;
+  color: var(--primary);
+  min-width: 16px;
+}
+
+.citation-badge:hover:not(:disabled) .citation-number {
+  color: white;
+}
+
+.citation-preview {
+  color: var(--muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.citation-badge:hover:not(:disabled) .citation-preview {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.citation-badge--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.citations-list {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
 /* Accessibility */
 .question-input:focus-visible,
 .submit-button:focus-visible,
 .quick-action-button:focus-visible,
 .retry-button:focus-visible,
-.copy-button:focus-visible {
+.copy-button:focus-visible,
+.citation-badge:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
