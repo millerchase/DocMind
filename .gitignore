@@ -1,2 +1,6 @@
 .worktrees/
-.claude/settings.local.json
+.claude/settings.local.jsonextension/.env
+extension/.env.development
+extension/build/
+extension/.env
+.claude/

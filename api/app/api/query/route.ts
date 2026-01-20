@@ -1,12 +1,12 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { NextRequest, NextResponse } from 'next/server';
+import Anthropic from "@anthropic-ai/sdk";
+import { NextRequest, NextResponse } from "next/server";
 
 const MAX_CHARS = 30000;
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
 };
 
 const SYSTEM_PROMPT = `You are DocMind, an AI assistant that answers questions strictly using the provided document text. Do not use outside knowledge.
@@ -30,11 +30,11 @@ Return JSON:
 }`;
 
 const allowedModes = new Set([
-  'qa',
-  'summary',
-  'eli5',
-  'key-takeaways',
-  'main-arguments',
+  "qa",
+  "summary",
+  "eli5",
+  "key-takeaways",
+  "main-arguments",
 ]);
 
 interface QueryRequest {
@@ -50,9 +50,9 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('ANTHROPIC_API_KEY not configured');
+    console.error("ANTHROPIC_API_KEY not configured");
     return NextResponse.json(
-      { error: 'API_ERROR', message: 'Server configuration error' },
+      { error: "API_ERROR", message: "Server configuration error" },
       { status: 500, headers: corsHeaders }
     );
   }
@@ -63,23 +63,29 @@ export async function POST(req: NextRequest) {
 
   try {
     const body: QueryRequest = await req.json();
+    console.log("=== DEBUG ===");
+    console.log("Body keys:", Object.keys(body));
+    console.log("pageText exists:", !!body.pageText);
+    console.log("pageText length:", body.pageText?.length);
+    console.log("=============");
     const { pageText, question, url } = body;
 
     if (!pageText || pageText.length < 100) {
       return NextResponse.json(
-        { error: 'INSUFFICIENT_TEXT' },
+        { error: "INSUFFICIENT_TEXT" },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    const safeText = pageText.length > MAX_CHARS ? pageText.slice(0, MAX_CHARS) : pageText;
+    const safeText =
+      pageText.length > MAX_CHARS ? pageText.slice(0, MAX_CHARS) : pageText;
 
-    const rawMode = body.mode ?? 'qa';
-    const mode = allowedModes.has(rawMode) ? rawMode : 'qa';
+    const rawMode = body.mode ?? "qa";
+    const mode = allowedModes.has(rawMode) ? rawMode : "qa";
 
-    if (mode === 'qa' && (!question || !question.trim())) {
+    if (mode === "qa" && (!question || !question.trim())) {
       return NextResponse.json(
-        { error: 'MISSING_QUESTION' },
+        { error: "MISSING_QUESTION" },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -87,45 +93,42 @@ export async function POST(req: NextRequest) {
     const userPrompt = buildPrompt(safeText, question, mode, url);
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
       temperature: 0.3,
       system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
+      messages: [{ role: "user", content: userPrompt }],
     });
 
-    const textBlock = response.content.find((block) => block.type === 'text');
+    const textBlock = response.content.find((block) => block.type === "text");
 
-    if (!textBlock || textBlock.type !== 'text') {
+    if (!textBlock || textBlock.type !== "text") {
       return NextResponse.json(
-        { error: 'UNEXPECTED_RESPONSE' },
+        { error: "UNEXPECTED_RESPONSE" },
         { status: 500, headers: corsHeaders }
       );
     }
 
-    return NextResponse.json(
-      { raw: textBlock.text },
-      { headers: corsHeaders }
-    );
+    return NextResponse.json({ raw: textBlock.text }, { headers: corsHeaders });
   } catch (err) {
-    console.error('API error:', err);
+    console.error("API error:", err);
 
     if (err instanceof Anthropic.APIError) {
       if (err.status === 429) {
         return NextResponse.json(
-          { error: 'RATE_LIMITED' },
+          { error: "RATE_LIMITED" },
           { status: 429, headers: corsHeaders }
         );
       }
 
       return NextResponse.json(
-        { error: 'API_ERROR', message: err.message },
+        { error: "API_ERROR", message: err.message },
         { status: err.status || 500, headers: corsHeaders }
       );
     }
 
     return NextResponse.json(
-      { error: 'API_ERROR' },
+      { error: "API_ERROR" },
       { status: 500, headers: corsHeaders }
     );
   }
@@ -138,16 +141,17 @@ function buildPrompt(
   url?: string
 ): string {
   const docBlock = `<document>\n${text}\n</document>`;
-  const jsonReminder = '\n\nReturn your response as JSON with answer and citations array.';
+  const jsonReminder =
+    "\n\nReturn your response as JSON with answer and citations array.";
 
   switch (mode) {
-    case 'summary':
+    case "summary":
       return `${docBlock}\n\nProvide a concise summary of this document in 3-5 paragraphs.${jsonReminder}`;
-    case 'key-takeaways':
+    case "key-takeaways":
       return `${docBlock}\n\nList the 5-7 key takeaways from this document.${jsonReminder}`;
-    case 'eli5':
+    case "eli5":
       return `${docBlock}\n\nExplain this document in simple terms that a 5-year-old could understand.${jsonReminder}`;
-    case 'main-arguments':
+    case "main-arguments":
       return `${docBlock}\n\nIdentify and list the main arguments or claims made in this document.${jsonReminder}`;
     default:
       return `${docBlock}\n\nQuestion: ${question}${jsonReminder}`;
