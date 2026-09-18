@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     console.error("ANTHROPIC_API_KEY not configured");
     return NextResponse.json(
       { error: "API_ERROR", message: "Server configuration error" },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: corsHeaders },
     );
   }
 
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     if (!pageText || pageText.length < 100) {
       return NextResponse.json(
         { error: "INSUFFICIENT_TEXT" },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: corsHeaders },
       );
     }
 
@@ -86,14 +86,14 @@ export async function POST(req: NextRequest) {
     if (mode === "qa" && (!question || !question.trim())) {
       return NextResponse.json(
         { error: "MISSING_QUESTION" },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: corsHeaders },
       );
     }
 
     const userPrompt = buildPrompt(safeText, question, mode, url);
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 1024,
       temperature: 0.3,
       system: SYSTEM_PROMPT,
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     if (!textBlock || textBlock.type !== "text") {
       return NextResponse.json(
         { error: "UNEXPECTED_RESPONSE" },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: corsHeaders },
       );
     }
 
@@ -117,19 +117,19 @@ export async function POST(req: NextRequest) {
       if (err.status === 429) {
         return NextResponse.json(
           { error: "RATE_LIMITED" },
-          { status: 429, headers: corsHeaders }
+          { status: 429, headers: corsHeaders },
         );
       }
 
       return NextResponse.json(
         { error: "API_ERROR", message: err.message },
-        { status: err.status || 500, headers: corsHeaders }
+        { status: err.status || 500, headers: corsHeaders },
       );
     }
 
     return NextResponse.json(
       { error: "API_ERROR" },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: corsHeaders },
     );
   }
 }
@@ -138,7 +138,7 @@ function buildPrompt(
   text: string,
   question: string | undefined,
   mode: string,
-  url?: string
+  url?: string,
 ): string {
   const docBlock = `<document>\n${text}\n</document>`;
   const jsonReminder =
